@@ -1,7 +1,6 @@
 package com.taptalkclient;
 
 import android.app.Activity;
-import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.os.AsyncTask;
@@ -39,13 +38,14 @@ public class ClientMainActivity extends Activity {
     private NsdManager.ResolveListener mResolveListener;
     private NsdManager mNsdManager;
     private NsdServiceInfo mService;
+    private AudioThread mAudioRecorder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mNsdManager = (NsdManager)getSystemService(Context.NSD_SERVICE);
+       // mNsdManager = (NsdManager)getSystemService(Context.NSD_SERVICE);
         textView = (TextView)findViewById(R.id.textView);
         talkButton = (Button)findViewById(R.id.button_talk);
         talkButton.setOnTouchListener(new View.OnTouchListener() {
@@ -60,8 +60,8 @@ public class ClientMainActivity extends Activity {
             }
         });
 
-        initializeResolveListener();
-        initializeDiscoveryListener();
+        //initializeResolveListener();
+        //initializeDiscoveryListener();
     }
 
     private void transferData(){
@@ -72,9 +72,12 @@ public class ClientMainActivity extends Activity {
 
     private void tearDownConnection(){
         sendData = false;
+        if(mAudioRecorder != null)
+            mAudioRecorder.stopIt();
         Log.e(TAG, "Data sending stopped....");
         try {
-            clientSocket.close();
+            if(clientSocket != null)
+                clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -185,14 +188,15 @@ public class ClientMainActivity extends Activity {
         @Override
         protected Object doInBackground(Object[] params) {
             try {
-                clientSocket = new Socket(serverAddress, serverPort);
+                clientSocket = new Socket("192.168.1.107", 8855);//serverAddress, serverPort);
                 PrintWriter out = new PrintWriter(new BufferedWriter(
                         new OutputStreamWriter(clientSocket.getOutputStream())), true);
                 int i = 1;
-                while(sendData){
-                    out.println(i);
-                    i++;
-                }
+                mAudioRecorder = new AudioThread(out);
+                //while(sendData){
+                 //   out.println(i);
+                //    i++;
+                //}
 
             } catch (UnknownHostException e1) {
                 e1.printStackTrace();
